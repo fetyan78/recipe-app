@@ -9,7 +9,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 
-// Importerar routes för hantering av rätter
+// importerar routes för hantering av rätter
 const dishRoutes = require('./routes/dishes');
 
 const app = express();
