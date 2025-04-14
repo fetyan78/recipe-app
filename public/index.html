@@ -57,38 +57,46 @@
     function renderDishRow(dish) {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><input value="${dish.name}" data-id="${dish._id}" class="edit-name"></td>
-        <td><input value="${dish.ingredients.join(', ')}" class="edit-ingredients"></td>
-        <td><input value="${dish.origin}" class="edit-origin"></td>
-        <td><input value="${dish.cookingTime}" class="edit-time"></td>
-        <td><input value="${dish.spiceLevel}" class="edit-spice"></td>
+        <td><input value="${dish.name}" disabled class="edit-name"></td>
+        <td><input value="${dish.ingredients.join(', ')}" disabled class="edit-ingredients"></td>
+        <td><input value="${dish.origin}" disabled class="edit-origin"></td>
+        <td><input value="${dish.cookingTime}" disabled class="edit-time"></td>
+        <td><input value="${dish.spiceLevel}" disabled class="edit-spice"></td>
         <td>
-          <button onclick="updateDish('${dish._id}', this)">✏️ Uppdatera</button>
-          <button onclick="deleteDish('${dish._id}')">❌ Radera</button>
+          <button onclick="toggleEdit(this, '${dish._id}')">Uppdatera</button>
+          <button onclick="deleteDish('${dish._id}')">Radera</button>
         </td>
       `;
       tbody.appendChild(row);
     }
 
-    async function updateDish(id, button) {
+    function toggleEdit(button, id) {
       const row = button.closest('tr');
-      const name = row.querySelector('.edit-name').value;
-      const ingredients = row.querySelector('.edit-ingredients').value.split(',').map(i => i.trim());
-      const origin = row.querySelector('.edit-origin').value;
-      const cookingTime = parseInt(row.querySelector('.edit-time').value);
-      const spiceLevel = row.querySelector('.edit-spice').value;
+      const inputs = row.querySelectorAll('input');
 
-      const res = await fetch(`/api/dishes/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, ingredients, origin, cookingTime, spiceLevel })
-      });
-
-      if (res.ok) {
-        alert('✅ Uppdaterad!');
-        fetchDishes();
+      if (button.textContent === 'Uppdatera') {
+        inputs.forEach(input => input.disabled = false);
+        button.textContent = 'Spara';
       } else {
-        alert('⚠️ Kunde inte uppdatera');
+        const name = row.querySelector('.edit-name').value;
+        const ingredients = row.querySelector('.edit-ingredients').value.split(',').map(i => i.trim());
+        const origin = row.querySelector('.edit-origin').value;
+        const cookingTime = parseInt(row.querySelector('.edit-time').value);
+        const spiceLevel = row.querySelector('.edit-spice').value;
+
+        fetch(`/api/dishes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, ingredients, origin, cookingTime, spiceLevel })
+        })
+        .then(res => {
+          if (res.ok) {
+            alert('Rätten har uppdaterats!');
+            fetchDishes();
+          } else {
+            alert('Det gick inte att uppdatera.');
+          }
+        });
       }
     }
 
@@ -96,7 +104,7 @@
       if (!confirm("Är du säker på att du vill ta bort rätten?")) return;
       const res = await fetch(`/api/dishes/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        alert('❌ Borttagen');
+        alert('Rätten har tagits bort');
         fetchDishes();
       }
     }
@@ -119,13 +127,13 @@
       });
 
       if (res.status === 201) {
-        alert(' Tillagd!');
+        alert('Rätt tillagd!');
         form.reset();
         fetchDishes();
       } else if (res.status === 409) {
-        alert('⚠️ Rätten finns redan!');
+        alert('Rätten finns redan!');
       } else {
-        alert('❌ Fel!');
+        alert('Ett fel inträffade!');
       }
     });
 
