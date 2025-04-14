@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Exotiska Rätter</title>
+  <style>
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 5px;
+    }
+    input {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌍 Mina Exotiska Rätter</h1>
+
+  <table id="dishTable">
+    <thead>
+      <tr>
+        <th>Namn</th>
+        <th>Ingredienser</th>
+        <th>Ursprung</th>
+        <th>Tillagningstid</th>
+        <th>Styrka</th>
+        <th>Handling</th>
+      </tr>
+    </thead>
+    <tbody id="dishBody"></tbody>
+  </table>
+
+  <h2>➕ Lägg till ny rätt</h2>
+  <form id="dishForm">
+    <input type="text" name="name" placeholder="Namn" required><br>
+    <input type="text" name="ingredients" placeholder="Ingredienser (komma-separerat)" required><br>
+    <input type="text" name="preparationSteps" placeholder="Steg (komma-separerat)" required><br>
+    <input type="number" name="cookingTime" placeholder="Tid (minuter)" required><br>
+    <input type="text" name="origin" placeholder="Ursprung" required><br>
+    <input type="text" name="spiceLevel" placeholder="Styrka (Mild/Medium/Stark)"><br>
+    <button type="submit">Lägg till rätt</button>
+  </form>
+
+  <script>
+    const tbody = document.getElementById('dishBody');
+
+    async function fetchDishes() {
+      tbody.innerHTML = '';
+      const res = await fetch('/api/dishes');
+      const data = await res.json();
+      data.forEach(dish => renderDishRow(dish));
+    }
+
+    function renderDishRow(dish) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input value="${dish.name}" data-id="${dish._id}" class="edit-name"></td>
+        <td><input value="${dish.ingredients.join(', ')}" class="edit-ingredients"></td>
+        <td><input value="${dish.origin}" class="edit-origin"></td>
+        <td><input value="${dish.cookingTime}" class="edit-time"></td>
+        <td><input value="${dish.spiceLevel}" class="edit-spice"></td>
+        <td>
+          <button onclick="updateDish('${dish._id}', this)">✏️ Uppdatera</button>
+          <button onclick="deleteDish('${dish._id}')">❌ Radera</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    async function updateDish(id, button) {
+      const row = button.closest('tr');
+      const name = row.querySelector('.edit-name').value;
+      const ingredients = row.querySelector('.edit-ingredients').value.split(',').map(i => i.trim());
+      const origin = row.querySelector('.edit-origin').value;
+      const cookingTime = parseInt(row.querySelector('.edit-time').value);
+      const spiceLevel = row.querySelector('.edit-spice').value;
+
+      const res = await fetch(`/api/dishes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, ingredients, origin, cookingTime, spiceLevel })
+      });
+
+      if (res.ok) {
+        alert('✅ Uppdaterad!');
+        fetchDishes();
+      } else {
+        alert('⚠️ Kunde inte uppdatera');
+      }
+    }
+
+    async function deleteDish(id) {
+      if (!confirm("Är du säker på att du vill ta bort rätten?")) return;
+      const res = await fetch(`/api/dishes/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        alert('❌ Borttagen');
+        fetchDishes();
+      }
+    }
+
+    document.getElementById('dishForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.target;
+      const newDish = {
+        name: form.name.value,
+        ingredients: form.ingredients.value.split(',').map(i => i.trim()),
+        preparationSteps: form.preparationSteps.value.split(',').map(s => s.trim()),
+        cookingTime: parseInt(form.cookingTime.value),
+        origin: form.origin.value,
+        spiceLevel: form.spiceLevel.value
+      };
+      const res = await fetch('/api/dishes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDish)
+      });
+
+      if (res.status === 201) {
+        alert('🎉 Tillagd!');
+        form.reset();
+        fetchDishes();
+      } else if (res.status === 409) {
+        alert('⚠️ Rätten finns redan!');
+      } else {
+        alert('❌ Fel!');
+      }
+    });
+
+    fetchDishes();
+  </script>
+</body>
+</html>
